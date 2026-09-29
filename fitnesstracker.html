@@ -1,0 +1,499 @@
+from IPython.display import HTML, display
+
+display(HTML("""
+<!DOCTYPE html>
+<html>
+<head>
+
+<style>
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f3f6f9;
+    margin: 0;
+    padding: 30px;
+}
+
+.container {
+    max-width: 850px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    color: #222;
+}
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 25px;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+}
+
+.card h3 {
+    margin: 5px;
+    color: #555;
+}
+
+.value {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 10px;
+}
+
+.section {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 7px 0 15px;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    box-sizing: border-box;
+}
+
+button {
+    background: #4a6cf7;
+    color: white;
+    border: none;
+    padding: 11px 20px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.progress-container {
+    background: #ddd;
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    width: 0%;
+    background: #4a6cf7;
+    transition: width 0.5s;
+}
+
+.activity {
+    background: #f5f7fa;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+
+.delete {
+    background: #e74c3c;
+    float: right;
+}
+
+@media(max-width: 650px) {
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>💪 Fitness Tracker</h1>
+
+<p class="subtitle">
+Track your daily fitness activities and progress
+</p>
+
+
+<!-- DASHBOARD -->
+
+<div class="dashboard">
+
+<div class="card">
+<h3>👣 Steps</h3>
+<div class="value" id="steps">0</div>
+<p>steps</p>
+</div>
+
+<div class="card">
+<h3>🔥 Calories</h3>
+<div class="value" id="calories">0</div>
+<p>kcal</p>
+</div>
+
+<div class="card">
+<h3>⏱ Workout</h3>
+<div class="value" id="workout">0</div>
+<p>minutes</p>
+</div>
+
+</div>
+
+
+<!-- ADD ACTIVITY -->
+
+<div class="section">
+
+<h2>➕ Add Fitness Activity</h2>
+
+<label>Activity Type</label>
+
+<select id="activityType">
+
+<option value="Walking">Walking</option>
+<option value="Running">Running</option>
+<option value="Cycling">Cycling</option>
+<option value="Workout">Workout</option>
+<option value="Yoga">Yoga</option>
+
+</select>
+
+
+<label>Steps</label>
+
+<input
+type="number"
+id="activitySteps"
+placeholder="Enter steps"
+min="0"
+>
+
+
+<label>Workout Duration (minutes)</label>
+
+<input
+type="number"
+id="activityWorkout"
+placeholder="Enter workout time"
+min="0"
+>
+
+
+<label>Calories Burned</label>
+
+<input
+type="number"
+id="activityCalories"
+placeholder="Enter calories"
+min="0"
+>
+
+
+<button onclick="addActivity()">
+Add Activity
+</button>
+
+<p id="message"></p>
+
+</div>
+
+
+<!-- DAILY PROGRESS -->
+
+<div class="section">
+
+<h2>📊 Daily Progress</h2>
+
+<p>Steps Goal: 10,000</p>
+
+<div class="progress-container">
+
+<div class="progress" id="stepProgress"></div>
+
+</div>
+
+<p id="stepPercentage">0%</p>
+
+
+<p>Calories Goal: 2,000 kcal</p>
+
+<div class="progress-container">
+
+<div class="progress" id="calorieProgress"></div>
+
+</div>
+
+<p id="caloriePercentage">0%</p>
+
+
+<p>Workout Goal: 60 minutes</p>
+
+<div class="progress-container">
+
+<div class="progress" id="workoutProgress"></div>
+
+</div>
+
+<p id="workoutPercentage">0%</p>
+
+</div>
+
+
+<!-- ACTIVITY HISTORY -->
+
+<div class="section">
+
+<h2>📋 Activity History</h2>
+
+<div id="activityList">
+
+<p>No activities recorded yet.</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+let activities = [];
+
+
+// Add activity
+
+function addActivity() {
+
+    let type =
+        document.getElementById("activityType").value;
+
+    let steps =
+        Number(document.getElementById("activitySteps").value);
+
+    let workout =
+        Number(document.getElementById("activityWorkout").value);
+
+    let calories =
+        Number(document.getElementById("activityCalories").value);
+
+
+    if (steps === 0 && workout === 0 && calories === 0) {
+
+        document.getElementById("message").innerText =
+            "Please enter some fitness data.";
+
+        return;
+    }
+
+
+    let activity = {
+
+        type: type,
+
+        steps: steps,
+
+        workout: workout,
+
+        calories: calories
+
+    };
+
+
+    activities.push(activity);
+
+
+    document.getElementById("message").innerText =
+        "Activity added successfully!";
+
+
+    // Clear inputs
+
+    document.getElementById("activitySteps").value = "";
+
+    document.getElementById("activityWorkout").value = "";
+
+    document.getElementById("activityCalories").value = "";
+
+
+    updateDashboard();
+
+}
+
+
+// Update dashboard
+
+function updateDashboard() {
+
+    let totalSteps = 0;
+
+    let totalCalories = 0;
+
+    let totalWorkout = 0;
+
+
+    for (let activity of activities) {
+
+        totalSteps += activity.steps;
+
+        totalCalories += activity.calories;
+
+        totalWorkout += activity.workout;
+
+    }
+
+
+    document.getElementById("steps").innerText =
+        totalSteps;
+
+
+    document.getElementById("calories").innerText =
+        totalCalories;
+
+
+    document.getElementById("workout").innerText =
+        totalWorkout;
+
+
+    // Step progress
+
+    let stepPercent =
+        Math.min((totalSteps / 10000) * 100, 100);
+
+
+    document.getElementById("stepProgress").style.width =
+        stepPercent + "%";
+
+
+    document.getElementById("stepPercentage").innerText =
+        Math.round(stepPercent) + "%";
+
+
+    // Calories progress
+
+    let caloriePercent =
+        Math.min((totalCalories / 2000) * 100, 100);
+
+
+    document.getElementById("calorieProgress").style.width =
+        caloriePercent + "%";
+
+
+    document.getElementById("caloriePercentage").innerText =
+        Math.round(caloriePercent) + "%";
+
+
+    // Workout progress
+
+    let workoutPercent =
+        Math.min((totalWorkout / 60) * 100, 100);
+
+
+    document.getElementById("workoutProgress").style.width =
+        workoutPercent + "%";
+
+
+    document.getElementById("workoutPercentage").innerText =
+        Math.round(workoutPercent) + "%";
+
+
+    displayActivities();
+
+}
+
+
+// Display activities
+
+function displayActivities() {
+
+    let list =
+        document.getElementById("activityList");
+
+
+    if (activities.length === 0) {
+
+        list.innerHTML =
+            "<p>No activities recorded yet.</p>";
+
+        return;
+    }
+
+
+    list.innerHTML = "";
+
+
+    activities.forEach(function(activity, index) {
+
+        let div =
+            document.createElement("div");
+
+        div.className = "activity";
+
+
+        div.innerHTML =
+
+            "<strong>" +
+            activity.type +
+            "</strong>" +
+
+            "<br>👣 Steps: " +
+            activity.steps +
+
+            "<br>🔥 Calories: " +
+            activity.calories +
+            " kcal" +
+
+            "<br>⏱ Workout: " +
+            activity.workout +
+            " minutes" +
+
+            "<br><br>" +
+
+            "<button class='delete' onclick='deleteActivity(" +
+            index +
+            ")'>Delete</button>";
+
+
+        list.appendChild(div);
+
+    });
+
+}
+
+
+// Delete activity
+
+function deleteActivity(index) {
+
+    activities.splice(index, 1);
+
+    updateDashboard();
+
+}
+
+</script>
+
+</body>
+</html>
+"""))
